@@ -1,85 +1,86 @@
 <!DOCTYPE html>
 <html lang="en-us">
-	<head>
-		<meta charset="utf-8" />
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<title>Unity WebGL Player | Eat The Rich</title>
-		<script src="Build/UnityLoader.js"></script>
-		<script>
-			function mergeFiles(fileParts) {
-				return new Promise((resolve, reject) => {
-					let buffers = [];
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Eat The Rich</title>
+    <style>
+      html, body {
+        background: #231F20;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+      #unity-container {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+      }
+      #unity-canvas {
+        width: 100%;
+        height: 100%;
+        background: #231F20;
+        display: block;
+      }
+      #unity-loading-bar {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-family: sans-serif;
+        text-align: center;
+      }
+      #unity-progress-bar-empty {
+        width: 200px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        margin-top: 10px;
+        border-radius: 5px;
+      }
+      #unity-progress-bar-full {
+        width: 0%;
+        height: 100%;
+        background: #ffffff;
+        border-radius: 5px;
+        transition: width 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo">Loading...</div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+    </div>
 
-					function fetchPart(index) {
-						if (index >= fileParts.length) {
-							let mergedBlob = new Blob(buffers);
-							let mergedFileUrl = URL.createObjectURL(mergedBlob);
-							resolve(mergedFileUrl);
-							return;
-						}
-						fetch(fileParts[index])
-							.then((response) => response.arrayBuffer())
-							.then((data) => {
-								buffers.push(data);
-								fetchPart(index + 1);
-							})
-							.catch(reject);
-					}
-					fetchPart(0);
-				});
-			}
+    <!-- Unity Loader Script (Usually found inside your Build folder) -->
+    <script src="Build/UnityLoader.js"></script>
+    <script>
+      // Configuration built from your project parameters
+      var unityInstance = UnityLoader.instantiate("unity-canvas", "Build/EatTheRichPort.json", {
+        onProgress: UnityProgress
+      });
 
-			function getParts(file, start, end) {
-				let parts = [];
-				for (let i = start; i <= end; i++) {
-					parts.push(file + ".part" + i);
-				}
-				return parts;
-			}
-
-			function resizeUnityContainer() {
-				var container = document.getElementById("unityContainer");
-				container.style.width = window.innerWidth + "px";
-				container.style.height = window.innerHeight + "px";
-			}
-			Promise.all([
-				mergeFiles(getParts("Build/EatTheRichPort.data.unityweb", 1, 3)),
-			]).then(([dataUrl]) => {
-				window.dataUrll = dataUrl;
-				var json = {
-					companyName: "DefaultCompany",
-					productName: "Eat The Rich",
-					dataUrl: "EatTheRichPort.data.unityweb",
-					wasmCodeUrl: "EatTheRichPort.wasm.code.unityweb",
-					wasmFrameworkUrl: "EatTheRichPort.wasm.framework.unityweb",
-					wasmSymbolsUrl: "EatTheRichPort.wasm.symbols.unityweb",
-					TOTAL_MEMORY: 67108864,
-					graphicsAPI: ["WebGL 2.0", "WebGL 1.0"],
-					webglContextAttributes: { preserveDrawingBuffer: false },
-					splashScreenStyle: "Dark",
-					backgroundColor: "#231F20",
-				};
-				let blob = new Blob([JSON.stringify(json)], {
-					type: "application/json",
-				});
-				let blobUrl = URL.createObjectURL(blob);
-				window.addEventListener("resize", resizeUnityContainer);
-				UnityLoader.instantiate("unityContainer", json, {
-					url: blobUrl,
-					Module: {
-						onRuntimeInitialized: function () {
-							resizeUnityContainer();
-							document.querySelector("#loading-text").remove();
-						},
-					},
-				});
-			});
-		</script>
-	</head>
-	<body>
-		<div
-			id="gameContainer"
-			style="width: 960px; height: 600px; margin: auto"
-		></div>
-	</body>
+      function UnityProgress(unityInstance, progress) {
+        if (!unityInstance.Module) return;
+        
+        const loadingBar = document.getElementById("unity-loading-bar");
+        const progressBarFull = document.getElementById("unity-progress-bar-full");
+        
+        progressBarFull.style.width = (100 * progress) + "%";
+        
+        if (progress === 1 && !unityInstance.Module.loadingDone) {
+          unityInstance.Module.loadingDone = true;
+          loadingBar.style.display = "none";
+        }
+      }
+    </script>
+  </body>
 </html>
